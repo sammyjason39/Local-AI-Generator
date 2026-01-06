@@ -247,34 +247,29 @@ async function generateImage() {
         
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        // Get the response as text
-        const responseText = await response.text();
+        // Read response as blob (binary data)
+        let blob = await response.blob();
+        console.log('Received blob:', blob.type, blob.size, 'bytes');
         
-        // Clean up the response - remove any whitespace, quotes, or brackets
-        let base64Data = responseText.trim();
-        
-        // If it looks like JSON, try to extract the data field
-        if (base64Data.startsWith('[') || base64Data.startsWith('{')) {
-            try {
-                const json = JSON.parse(base64Data);
-                const item = Array.isArray(json) ? json[0] : json;
-                base64Data = item.data || item.base64 || item.image || base64Data;
-            } catch (e) {
-                // Not valid JSON, use as-is
-            }
+        // If blob has no type, assume it's PNG
+        if (!blob.type || blob.type === 'application/octet-stream') {
+            blob = new Blob([blob], { type: 'image/png' });
+            console.log('Created typed blob:', blob.type);
         }
         
-        // Remove any remaining quotes
-        base64Data = base64Data.replace(/^["']|["']$/g, '');
+        // Convert blob to base64 data URL
+        const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Failed to read image data'));
+            reader.readAsDataURL(blob);
+        });
         
-        // Create the data URL
-        const dataUrl = `data:image/png;base64,${base64Data}`;
+        console.log('Data URL created, length:', dataUrl.length);
+        console.log('Data URL prefix:', dataUrl.substring(0, 50));
         
-        // Display the image directly
-        elements.imageOutput.innerHTML = `<img src="${dataUrl}" alt="Generated image" style="max-width: 100%; height: auto;" />`;
-        state.image.generatedUrl = dataUrl;
-        elements.downloadImageBtn.disabled = false;
-        
+        // Display the image
+        displayGeneratedImage(dataUrl);
         showToast('Image generated successfully!', 'success');
         
     } catch (error) {
@@ -288,7 +283,12 @@ async function generateImage() {
 
 function displayGeneratedImage(dataUrl) {
     state.image.generatedUrl = dataUrl;
-    elements.imageOutput.innerHTML = `<img src="${dataUrl}" alt="Generated image" style="max-width: 100%; height: auto;" />`;
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.alt = 'Generated image';
+    img.style.cssText = 'max-width: 100%; height: auto; display: block;';
+    elements.imageOutput.innerHTML = '';
+    elements.imageOutput.appendChild(img);
     elements.downloadImageBtn.disabled = false;
 }
 

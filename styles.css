@@ -7,7 +7,7 @@
 :root {
     /* Typography */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    
+
     /* Spacing */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -15,19 +15,19 @@
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
-    
+
     /* Border Radius */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 24px;
     --radius-full: 9999px;
-    
+
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-base: 250ms ease;
     --transition-slow: 400ms ease;
-    
+
     /* Shadows */
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -44,21 +44,21 @@
     --bg-glass-hover: rgba(255, 255, 255, 0.06);
     --border-glass: rgba(255, 255, 255, 0.08);
     --border-glass-hover: rgba(255, 255, 255, 0.15);
-    
+
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.7);
     --text-tertiary: rgba(255, 255, 255, 0.5);
     --text-muted: rgba(255, 255, 255, 0.3);
-    
+
     --accent-primary: #8b5cf6;
     --accent-secondary: #6366f1;
     --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
     --accent-glow: rgba(139, 92, 246, 0.4);
-    
+
     --success: #10b981;
     --warning: #f59e0b;
     --error: #ef4444;
-    
+
     --input-bg: rgba(255, 255, 255, 0.05);
     --input-border: rgba(255, 255, 255, 0.1);
     --input-focus: rgba(139, 92, 246, 0.5);
@@ -73,28 +73,30 @@
     --bg-glass-hover: rgba(255, 255, 255, 0.85);
     --border-glass: rgba(0, 0, 0, 0.08);
     --border-glass-hover: rgba(0, 0, 0, 0.15);
-    
+
     --text-primary: #0f172a;
     --text-secondary: rgba(15, 23, 42, 0.7);
     --text-tertiary: rgba(15, 23, 42, 0.5);
     --text-muted: rgba(15, 23, 42, 0.3);
-    
+
     --accent-primary: #7c3aed;
     --accent-secondary: #4f46e5;
     --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #2563eb 100%);
     --accent-glow: rgba(124, 58, 237, 0.3);
-    
+
     --success: #059669;
     --warning: #d97706;
     --error: #dc2626;
-    
+
     --input-bg: rgba(0, 0, 0, 0.03);
     --input-border: rgba(0, 0, 0, 0.1);
     --input-focus: rgba(124, 58, 237, 0.5);
 }
 
 /* ===== Reset & Base ===== */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -155,10 +157,23 @@ body {
 }
 
 @keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    25% { transform: translate(50px, 50px) scale(1.1); }
-    50% { transform: translate(0, 100px) scale(1); }
-    75% { transform: translate(-50px, 50px) scale(0.95); }
+
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    25% {
+        transform: translate(50px, 50px) scale(1.1);
+    }
+
+    50% {
+        transform: translate(0, 100px) scale(1);
+    }
+
+    75% {
+        transform: translate(-50px, 50px) scale(0.95);
+    }
 }
 
 .bg-noise {
@@ -298,10 +313,21 @@ body {
 }
 
 /* Theme Toggle */
-#themeToggle .sun-icon { display: none; }
-#themeToggle .moon-icon { display: block; }
-[data-theme="light"] #themeToggle .sun-icon { display: block; }
-[data-theme="light"] #themeToggle .moon-icon { display: none; }
+#themeToggle .sun-icon {
+    display: none;
+}
+
+#themeToggle .moon-icon {
+    display: block;
+}
+
+[data-theme="light"] #themeToggle .sun-icon {
+    display: block;
+}
+
+[data-theme="light"] #themeToggle .moon-icon {
+    display: none;
+}
 
 /* ===== Main Content ===== */
 .main-content {
@@ -318,8 +344,15 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Generator Layout */
@@ -525,9 +558,20 @@ body {
     opacity: 0.5;
 }
 
-.ratio-preview.square { width: 24px; height: 24px; }
-.ratio-preview.landscape { width: 32px; height: 18px; }
-.ratio-preview.portrait { width: 18px; height: 32px; }
+.ratio-preview.square {
+    width: 24px;
+    height: 24px;
+}
+
+.ratio-preview.landscape {
+    width: 32px;
+    height: 18px;
+}
+
+.ratio-preview.portrait {
+    width: 18px;
+    height: 32px;
+}
 
 /* Voice Buttons */
 .voice-options {
@@ -623,7 +667,9 @@ body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .btn-secondary {
@@ -685,6 +731,7 @@ body {
 .output-content {
     flex: 1;
     min-height: 400px;
+    max-height: 600px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -692,6 +739,7 @@ body {
     border: 1px dashed var(--input-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
+    position: relative;
 }
 
 .placeholder {
@@ -714,6 +762,8 @@ body {
 .output-content img {
     max-width: 100%;
     max-height: 100%;
+    width: auto;
+    height: auto;
     object-fit: contain;
     border-radius: var(--radius-md);
 }
@@ -773,8 +823,15 @@ body {
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .edit-hint {
@@ -869,9 +926,17 @@ body {
     cursor: not-allowed;
 }
 
-.btn-play .pause-icon { display: none; }
-.btn-play.playing .play-icon { display: none; }
-.btn-play.playing .pause-icon { display: block; }
+.btn-play .pause-icon {
+    display: none;
+}
+
+.btn-play.playing .play-icon {
+    display: none;
+}
+
+.btn-play.playing .pause-icon {
+    display: block;
+}
 
 .audio-time {
     display: flex;
@@ -1003,15 +1068,24 @@ body {
         opacity: 0;
         transform: translateX(100px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
     }
 }
 
-.toast.success { border-left: 4px solid var(--success); }
-.toast.error { border-left: 4px solid var(--error); }
-.toast.warning { border-left: 4px solid var(--warning); }
+.toast.success {
+    border-left: 4px solid var(--success);
+}
+
+.toast.error {
+    border-left: 4px solid var(--error);
+}
+
+.toast.warning {
+    border-left: 4px solid var(--warning);
+}
 
 .toast-icon {
     width: 24px;
@@ -1021,9 +1095,17 @@ body {
     justify-content: center;
 }
 
-.toast.success .toast-icon { color: var(--success); }
-.toast.error .toast-icon { color: var(--error); }
-.toast.warning .toast-icon { color: var(--warning); }
+.toast.success .toast-icon {
+    color: var(--success);
+}
+
+.toast.error .toast-icon {
+    color: var(--error);
+}
+
+.toast.warning .toast-icon {
+    color: var(--warning);
+}
 
 .toast-message {
     font-size: 0.9rem;
@@ -1035,11 +1117,11 @@ body {
     .generator-layout {
         grid-template-columns: 1fr;
     }
-    
+
     .music-layout {
         grid-template-columns: 1fr;
     }
-    
+
     .output-content {
         min-height: 300px;
     }
@@ -1049,39 +1131,39 @@ body {
     .app-container {
         padding: var(--spacing-md);
     }
-    
+
     .header {
         flex-wrap: wrap;
         gap: var(--spacing-md);
         padding: var(--spacing-md);
     }
-    
+
     .nav-tabs {
         order: 3;
         width: 100%;
         justify-content: center;
     }
-    
+
     .nav-tab span {
         display: none;
     }
-    
+
     .form-row {
         grid-template-columns: 1fr;
     }
-    
+
     .style-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .voice-options {
         flex-direction: column;
     }
-    
+
     .ratio-options {
         flex-direction: column;
     }
-    
+
     .modal {
         margin: var(--spacing-md);
     }
@@ -1091,19 +1173,19 @@ body {
     html {
         font-size: 14px;
     }
-    
+
     .logo-text {
         display: none;
     }
-    
+
     .btn-primary {
         padding: var(--spacing-md);
     }
-    
+
     .audio-controls {
         flex-wrap: wrap;
     }
-    
+
     .audio-controls .btn-download {
         width: 100%;
         margin-left: 0;
