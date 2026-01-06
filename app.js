@@ -17,7 +17,8 @@ const state = {
         style: 'realistic',
         ratio: '16:9',
         isGenerating: false,
-        generatedUrl: null
+        generatedUrl: null,
+        generatedBlob: null
     },
     music: {
         theme: '',
@@ -249,23 +250,56 @@ async function generateImage() {
         // Get content type to determine response format
         const contentType = response.headers.get('Content-Type') || '';
         
-        // Handle binary image data
-        if (contentType.startsWith('image/')) {
+        // Clone response so we can try multiple parsing methods
+        const responseClone = response.clone();
+        
+        // First, try to read as blob (binary image data)
+        try {
             const blob = await response.blob();
-            const imageUrl = await blobToDataURL(blob);
-            displayGeneratedImage(imageUrl);
-            showToast('Image generated successfully!', 'success');
-        } else {
-            // Fallback: try to parse as JSON for URL-based responses
-            const data = await response.json();
+            
+            // Check if it's actually an image (either by content-type or blob type)
+            if (contentType.startsWith('image/') || 
+                blob.type.startsWith('image/') || 
+                blob.size > 1000) { // Binary images are usually > 1KB
+                
+                // Verify it's image data by checking magic bytes or just try to use it
+                const imageUrl = URL.createObjectURL(blob);
+                
+                // Save blob for download later
+                state.image.generatedBlob = blob;
+                displayGeneratedImage(imageUrl);
+                showToast('Image generated successfully!', 'success');
+                return;
+            }
+        } catch (blobError) {
+            console.log('Blob parsing failed, trying JSON...', blobError);
+        }
+        
+        // Fallback: try to parse as JSON for URL-based responses
+        try {
+            const data = await responseClone.json();
+            
+            // Handle different response formats
             const imageUrl = data.image_url || data.imageUrl || data.url || data.image;
+            
+            // Check if response contains base64 data
+            const base64Data = data.data || data.base64 || data.image_data || data.imageData;
             
             if (imageUrl) {
                 displayGeneratedImage(imageUrl);
                 showToast('Image generated successfully!', 'success');
+            } else if (base64Data) {
+                // Handle base64 encoded image data
+                const mimeType = data.mimeType || data.mime_type || 'image/png';
+                const dataUrl = `data:${mimeType};base64,${base64Data}`;
+                displayGeneratedImage(dataUrl);
+                showToast('Image generated successfully!', 'success');
             } else {
                 throw new Error('No image data in response');
             }
+        } catch (jsonError) {
+            console.error('JSON parsing also failed:', jsonError);
+            throw new Error('Could not parse response as image or JSON');
         }
     } catch (error) {
         console.error('Image generation error:', error);
@@ -283,12 +317,22 @@ function displayGeneratedImage(url) {
 }
 
 async function downloadImage() {
-    if (!state.image.generatedUrl) return;
+    if (!state.image.generatedUrl && !state.image.generatedBlob) return;
     
     try {
-        const response = await fetch(state.image.generatedUrl);
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
+        let blob;
+        let url;
+        
+        // Use saved blob if available (from binary response)
+        if (state.image.generatedBlob) {
+            blob = state.image.generatedBlob;
+            url = URL.createObjectURL(blob);
+        } else {
+            // Fetch from URL
+            const response = await fetch(state.image.generatedUrl);
+            blob = await response.blob();
+            url = URL.createObjectURL(blob);
+        }
         
         const a = document.createElement('a');
         a.href = url;
@@ -301,7 +345,9 @@ async function downloadImage() {
         showToast('Image downloaded!', 'success');
     } catch (error) {
         // Fallback: open in new tab
-        window.open(state.image.generatedUrl, '_blank');
+        if (state.image.generatedUrl) {
+            window.open(state.image.generatedUrl, '_blank');
+        }
     }
 }
 
