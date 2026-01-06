@@ -247,59 +247,48 @@ async function generateImage() {
         
         if (!response.ok) throw new Error('Generation failed');
         
-        // Get content type to determine response format
-        const contentType = response.headers.get('Content-Type') || '';
+        // Parse JSON response
+        const data = await response.json();
         
-        // Clone response so we can try multiple parsing methods
-        const responseClone = response.clone();
+        // Handle array response (n8n returns array)
+        const imageData = Array.isArray(data) ? data[0] : data;
         
-        // First, try to read as blob (binary image data)
-        try {
-            const blob = await response.blob();
-            
-            // Check if it's actually an image (either by content-type or blob type)
-            if (contentType.startsWith('image/') || 
-                blob.type.startsWith('image/') || 
-                blob.size > 1000) { // Binary images are usually > 1KB
-                
-                // Verify it's image data by checking magic bytes or just try to use it
-                const imageUrl = URL.createObjectURL(blob);
-                
-                // Save blob for download later
-                state.image.generatedBlob = blob;
-                displayGeneratedImage(imageUrl);
-                showToast('Image generated successfully!', 'success');
-                return;
+        if (!imageData) throw new Error('Empty response');
+        
+        // Check for base64 data field (n8n ComfyUI format)
+        const base64Data = imageData.data || imageData.base64 || imageData.image_data || imageData.imageData;
+        
+        if (base64Data) {
+            // Determine MIME type from filename or default to png
+            let mimeType = 'image/png';
+            const filename = imageData.filename || '';
+            if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) {
+                mimeType = 'image/jpeg';
+            } else if (filename.endsWith('.webp')) {
+                mimeType = 'image/webp';
+            } else if (filename.endsWith('.gif')) {
+                mimeType = 'image/gif';
             }
-        } catch (blobError) {
-            console.log('Blob parsing failed, trying JSON...', blobError);
+            
+            // Create data URL from base64
+            const dataUrl = `data:${mimeType};base64,${base64Data}`;
+            
+            // Store filename for download
+            state.image.filename = filename || `ai-image-${Date.now()}.png`;
+            
+            displayGeneratedImage(dataUrl);
+            showToast('Image generated successfully!', 'success');
+            return;
         }
         
-        // Fallback: try to parse as JSON for URL-based responses
-        try {
-            const data = await responseClone.json();
-            
-            // Handle different response formats
-            const imageUrl = data.image_url || data.imageUrl || data.url || data.image;
-            
-            // Check if response contains base64 data
-            const base64Data = data.data || data.base64 || data.image_data || data.imageData;
-            
-            if (imageUrl) {
-                displayGeneratedImage(imageUrl);
-                showToast('Image generated successfully!', 'success');
-            } else if (base64Data) {
-                // Handle base64 encoded image data
-                const mimeType = data.mimeType || data.mime_type || 'image/png';
-                const dataUrl = `data:${mimeType};base64,${base64Data}`;
-                displayGeneratedImage(dataUrl);
-                showToast('Image generated successfully!', 'success');
-            } else {
-                throw new Error('No image data in response');
-            }
-        } catch (jsonError) {
-            console.error('JSON parsing also failed:', jsonError);
-            throw new Error('Could not parse response as image or JSON');
+        // Fallback: check for URL-based responses
+        const imageUrl = imageData.image_url || imageData.imageUrl || imageData.url || imageData.image;
+        
+        if (imageUrl) {
+            displayGeneratedImage(imageUrl);
+            showToast('Image generated successfully!', 'success');
+        } else {
+            throw new Error('No image data in response');
         }
     } catch (error) {
         console.error('Image generation error:', error);
