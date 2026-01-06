@@ -235,10 +235,16 @@ async function generateImage() {
     setButtonLoading(elements.generateImageBtn, true);
     
     try {
-        console.log('Sending request to:', state.settings.imageWebhook);
-        const response = await fetch(state.settings.imageWebhook, {
+        // Use proxy to bypass CORS restrictions
+        const proxyUrl = `/proxy/${encodeURIComponent(state.settings.imageWebhook)}`;
+        console.log('Sending request via proxy to:', state.settings.imageWebhook);
+        
+        const response = await fetch(proxyUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
             body: JSON.stringify({
                 prompt: state.image.prompt,
                 style: state.image.style,
@@ -247,11 +253,25 @@ async function generateImage() {
         });
         
         console.log('Response status:', response.status, response.ok);
+        console.log('Response headers:', [...response.headers.entries()]);
         
         if (!response.ok) throw new Error(`Generation failed with status ${response.status}`);
         
-        // Parse JSON response
-        const data = await response.json();
+        // Read response as text first to debug
+        const responseText = await response.text();
+        console.log('Response text length:', responseText.length);
+        console.log('Response text preview:', responseText.substring(0, 200));
+        
+        // Parse JSON from text
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.error('Full response text:', responseText);
+            throw new Error('Invalid JSON response from server');
+        }
+        
         console.log('Parsed JSON data:', data);
         console.log('Is Array:', Array.isArray(data));
         
@@ -262,10 +282,18 @@ async function generateImage() {
         if (!imageData) throw new Error('Empty response');
         
         // Check for base64 data field (n8n ComfyUI format)
-        const base64Data = imageData.data || imageData.base64 || imageData.image_data || imageData.imageData;
+        let base64Data = imageData.data || imageData.base64 || imageData.image_data || imageData.imageData;
         console.log('Base64 data found:', base64Data ? `${base64Data.substring(0, 50)}... (${base64Data.length} chars)` : 'null');
         
         if (base64Data) {
+            // Remove data URL prefix if present (e.g., "data:image/png;base64,")
+            if (base64Data.startsWith('data:')) {
+                console.log('Base64 already has data URL prefix, using as-is');
+                displayGeneratedImage(base64Data);
+                showToast('Image generated successfully!', 'success');
+                return;
+            }
+            
             // Determine MIME type from filename or default to png
             let mimeType = 'image/png';
             const filename = imageData.filename || '';
@@ -282,6 +310,7 @@ async function generateImage() {
             // Create data URL from base64
             const dataUrl = `data:${mimeType};base64,${base64Data}`;
             console.log('Data URL created, length:', dataUrl.length);
+            console.log('Data URL preview:', dataUrl.substring(0, 100));
             
             // Store filename for download
             state.image.filename = filename || `ai-image-${Date.now()}.png`;
@@ -311,10 +340,24 @@ async function generateImage() {
     }
 }
 
-function displayGeneratedImage(url) {
-    state.image.generatedUrl = url;
-    elements.imageOutput.innerHTML = `<img src="${url}" alt="Generated image" />`;
-    elements.downloadImageBtn.disabled = false;
+function displayGeneratedImage(dataUrl) {
+    console.log('Displaying image with URL length:', dataUrl.length);
+    state.image.generatedUrl = dataUrl;
+    
+    // Create an image element to verify the data URL works
+    const img = new Image();
+    img.onload = function() {
+        console.log('Image loaded successfully:', img.width, 'x', img.height);
+        elements.imageOutput.innerHTML = '';
+        elements.imageOutput.appendChild(img);
+        elements.downloadImageBtn.disabled = false;
+    };
+    img.onerror = function(e) {
+        console.error('Image failed to load:', e);
+        elements.imageOutput.innerHTML = '<p style="color: red;">Failed to display image</p>';
+    };
+    img.alt = 'Generated image';
+    img.src = dataUrl;
 }
 
 async function downloadImage() {
