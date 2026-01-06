@@ -246,16 +246,26 @@ async function generateImage() {
         
         if (!response.ok) throw new Error('Generation failed');
         
-        const data = await response.json();
+        // Get content type to determine response format
+        const contentType = response.headers.get('Content-Type') || '';
         
-        // Handle different response formats
-        const imageUrl = data.image_url || data.imageUrl || data.url || data.image;
-        
-        if (imageUrl) {
+        // Handle binary image data
+        if (contentType.startsWith('image/')) {
+            const blob = await response.blob();
+            const imageUrl = await blobToDataURL(blob);
             displayGeneratedImage(imageUrl);
             showToast('Image generated successfully!', 'success');
         } else {
-            throw new Error('No image URL in response');
+            // Fallback: try to parse as JSON for URL-based responses
+            const data = await response.json();
+            const imageUrl = data.image_url || data.imageUrl || data.url || data.image;
+            
+            if (imageUrl) {
+                displayGeneratedImage(imageUrl);
+                showToast('Image generated successfully!', 'success');
+            } else {
+                throw new Error('No image data in response');
+            }
         }
     } catch (error) {
         console.error('Image generation error:', error);
@@ -578,6 +588,15 @@ async function testConnection() {
 }
 
 // ===== Utility Functions =====
+function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
 function setButtonLoading(button, isLoading) {
     button.classList.toggle('loading', isLoading);
     button.disabled = isLoading;
