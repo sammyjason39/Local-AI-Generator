@@ -255,10 +255,27 @@ async function generateImage() {
         
         if (!response.ok) throw new Error(`Generation failed with status ${response.status}`);
         
-        // Read response as text first to debug
+        // Read response as text first
         const responseText = await response.text();
         console.log('Response text length:', responseText.length);
-        console.log('Response text preview:', responseText.substring(0, 200));
+        console.log('Response text preview:', responseText.substring(0, 100));
+        
+        // Check if response is raw base64 (starts with PNG or JPEG magic bytes in base64)
+        // PNG starts with: iVBORw0KGgo
+        // JPEG starts with: /9j/
+        const isRawBase64 = responseText.startsWith('iVBORw') || responseText.startsWith('/9j/');
+        
+        if (isRawBase64) {
+            console.log('Detected raw base64 image data');
+            const mimeType = responseText.startsWith('/9j/') ? 'image/jpeg' : 'image/png';
+            const dataUrl = `data:${mimeType};base64,${responseText.trim()}`;
+            console.log('Created data URL, length:', dataUrl.length);
+            
+            state.image.filename = `ai-image-${Date.now()}.${mimeType === 'image/jpeg' ? 'jpg' : 'png'}`;
+            displayGeneratedImage(dataUrl);
+            showToast('Image generated successfully!', 'success');
+            return;
+        }
         
         // Parse JSON from text
         let data;
@@ -266,8 +283,8 @@ async function generateImage() {
             data = JSON.parse(responseText);
         } catch (parseError) {
             console.error('JSON parse error:', parseError);
-            console.error('Full response text:', responseText);
-            throw new Error('Invalid JSON response from server');
+            console.error('Response text (first 500 chars):', responseText.substring(0, 500));
+            throw new Error('Invalid response from server');
         }
         
         console.log('Parsed JSON data:', data);
