@@ -235,11 +235,9 @@ async function generateImage() {
     setButtonLoading(elements.generateImageBtn, true);
     
     try {
-        // Use proxy to bypass CORS restrictions
-        const proxyUrl = `/proxy/${encodeURIComponent(state.settings.imageWebhook)}`;
-        console.log('Sending request via proxy to:', state.settings.imageWebhook);
+        console.log('Sending request to:', state.settings.imageWebhook);
         
-        const response = await fetch(proxyUrl, {
+        const response = await fetch(state.settings.imageWebhook, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
