@@ -369,11 +369,14 @@ async function generateLyrics() {
         if (!response.ok) throw new Error('Generation failed');
         
         const data = await response.json();
+        console.log('Lyrics response:', data);
         
-        // Handle different response formats
-        const lyrics = data.lyrics || data.text || data.content || data.result;
+        // Handle n8n response format with 'output' field
+        let lyrics = data.output || data.lyrics || data.text || data.content || data.result;
         
         if (lyrics) {
+            // Convert \n to actual newlines for display
+            lyrics = lyrics.replace(/\\n/g, '\n');
             displayGeneratedLyrics(lyrics);
             showToast('Lyrics generated! You can edit them before generating music.', 'success');
         } else {
