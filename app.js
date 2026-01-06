@@ -235,14 +235,9 @@ async function generateImage() {
     setButtonLoading(elements.generateImageBtn, true);
     
     try {
-        console.log('Sending request to:', state.settings.imageWebhook);
-        
         const response = await fetch(state.settings.imageWebhook, {
             method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt: state.image.prompt,
                 style: state.image.style,
@@ -250,105 +245,41 @@ async function generateImage() {
             })
         });
         
-        console.log('Response status:', response.status, response.ok);
-        console.log('Response headers:', [...response.headers.entries()]);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        if (!response.ok) throw new Error(`Generation failed with status ${response.status}`);
-        
-        // Read response as text first
+        // Get the response as text
         const responseText = await response.text();
-        console.log('Response text length:', responseText.length);
-        console.log('Response text preview:', responseText.substring(0, 100));
         
-        // Check if response is raw base64 (starts with PNG or JPEG magic bytes in base64)
-        // PNG starts with: iVBORw0KGgo
-        // JPEG starts with: /9j/
-        const isRawBase64 = responseText.startsWith('iVBORw') || responseText.startsWith('/9j/');
+        // Clean up the response - remove any whitespace, quotes, or brackets
+        let base64Data = responseText.trim();
         
-        if (isRawBase64) {
-            console.log('Detected raw base64 image data');
-            const mimeType = responseText.startsWith('/9j/') ? 'image/jpeg' : 'image/png';
-            const dataUrl = `data:${mimeType};base64,${responseText.trim()}`;
-            console.log('Created data URL, length:', dataUrl.length);
-            
-            state.image.filename = `ai-image-${Date.now()}.${mimeType === 'image/jpeg' ? 'jpg' : 'png'}`;
-            displayGeneratedImage(dataUrl);
-            showToast('Image generated successfully!', 'success');
-            return;
-        }
-        
-        // Parse JSON from text
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            console.error('Response text (first 500 chars):', responseText.substring(0, 500));
-            throw new Error('Invalid response from server');
-        }
-        
-        console.log('Parsed JSON data:', data);
-        console.log('Is Array:', Array.isArray(data));
-        
-        // Handle array response (n8n returns array)
-        const imageData = Array.isArray(data) ? data[0] : data;
-        console.log('Image data object:', imageData);
-        
-        if (!imageData) throw new Error('Empty response');
-        
-        // Check for base64 data field (n8n ComfyUI format)
-        let base64Data = imageData.data || imageData.base64 || imageData.image_data || imageData.imageData;
-        console.log('Base64 data found:', base64Data ? `${base64Data.substring(0, 50)}... (${base64Data.length} chars)` : 'null');
-        
-        if (base64Data) {
-            // Remove data URL prefix if present (e.g., "data:image/png;base64,")
-            if (base64Data.startsWith('data:')) {
-                console.log('Base64 already has data URL prefix, using as-is');
-                displayGeneratedImage(base64Data);
-                showToast('Image generated successfully!', 'success');
-                return;
+        // If it looks like JSON, try to extract the data field
+        if (base64Data.startsWith('[') || base64Data.startsWith('{')) {
+            try {
+                const json = JSON.parse(base64Data);
+                const item = Array.isArray(json) ? json[0] : json;
+                base64Data = item.data || item.base64 || item.image || base64Data;
+            } catch (e) {
+                // Not valid JSON, use as-is
             }
-            
-            // Determine MIME type from filename or default to png
-            let mimeType = 'image/png';
-            const filename = imageData.filename || '';
-            console.log('Filename:', filename);
-            
-            if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) {
-                mimeType = 'image/jpeg';
-            } else if (filename.endsWith('.webp')) {
-                mimeType = 'image/webp';
-            } else if (filename.endsWith('.gif')) {
-                mimeType = 'image/gif';
-            }
-            
-            // Create data URL from base64
-            const dataUrl = `data:${mimeType};base64,${base64Data}`;
-            console.log('Data URL created, length:', dataUrl.length);
-            console.log('Data URL preview:', dataUrl.substring(0, 100));
-            
-            // Store filename for download
-            state.image.filename = filename || `ai-image-${Date.now()}.png`;
-            
-            displayGeneratedImage(dataUrl);
-            showToast('Image generated successfully!', 'success');
-            return;
         }
         
-        // Fallback: check for URL-based responses
-        const imageUrl = imageData.image_url || imageData.imageUrl || imageData.url || imageData.image;
-        console.log('Image URL:', imageUrl);
+        // Remove any remaining quotes
+        base64Data = base64Data.replace(/^["']|["']$/g, '');
         
-        if (imageUrl) {
-            displayGeneratedImage(imageUrl);
-            showToast('Image generated successfully!', 'success');
-        } else {
-            throw new Error('No image data in response');
-        }
+        // Create the data URL
+        const dataUrl = `data:image/png;base64,${base64Data}`;
+        
+        // Display the image directly
+        elements.imageOutput.innerHTML = `<img src="${dataUrl}" alt="Generated image" style="max-width: 100%; height: auto;" />`;
+        state.image.generatedUrl = dataUrl;
+        elements.downloadImageBtn.disabled = false;
+        
+        showToast('Image generated successfully!', 'success');
+        
     } catch (error) {
-        console.error('Image generation error:', error);
-        console.error('Error stack:', error.stack);
-        showToast('Failed to generate image. Please try again.', 'error');
+        console.error('Error:', error);
+        showToast('Failed to generate image: ' + error.message, 'error');
     } finally {
         state.image.isGenerating = false;
         setButtonLoading(elements.generateImageBtn, false);
@@ -356,23 +287,9 @@ async function generateImage() {
 }
 
 function displayGeneratedImage(dataUrl) {
-    console.log('Displaying image with URL length:', dataUrl.length);
     state.image.generatedUrl = dataUrl;
-    
-    // Create an image element to verify the data URL works
-    const img = new Image();
-    img.onload = function() {
-        console.log('Image loaded successfully:', img.width, 'x', img.height);
-        elements.imageOutput.innerHTML = '';
-        elements.imageOutput.appendChild(img);
-        elements.downloadImageBtn.disabled = false;
-    };
-    img.onerror = function(e) {
-        console.error('Image failed to load:', e);
-        elements.imageOutput.innerHTML = '<p style="color: red;">Failed to display image</p>';
-    };
-    img.alt = 'Generated image';
-    img.src = dataUrl;
+    elements.imageOutput.innerHTML = `<img src="${dataUrl}" alt="Generated image" style="max-width: 100%; height: auto;" />`;
+    elements.downloadImageBtn.disabled = false;
 }
 
 async function downloadImage() {
