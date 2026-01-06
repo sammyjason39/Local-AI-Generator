@@ -235,13 +235,13 @@ async function generateImage() {
     setButtonLoading(elements.generateImageBtn, true);
     
     try {
-        // Map ratio to resolution
-        const ratioToResolution = {
-            '1:1': '1024x1024',
-            '16:9': '1920x1080',
-            '9:16': '1080x1920'
+        // Map ratio to width and height
+        const ratioToSize = {
+            '1:1': { width: 1024, height: 1024 },
+            '16:9': { width: 1920, height: 1080 },
+            '9:16': { width: 1080, height: 1920 }
         };
-        const resolution = ratioToResolution[state.image.ratio] || '1024x1024';
+        const size = ratioToSize[state.image.ratio] || { width: 1024, height: 1024 };
         
         const response = await fetch(state.settings.imageWebhook, {
             method: 'POST',
@@ -249,7 +249,8 @@ async function generateImage() {
             body: JSON.stringify({
                 prompt: state.image.prompt,
                 style: state.image.style,
-                aspect_ratio: resolution
+                width: size.width,
+                height: size.height
             })
         });
         
