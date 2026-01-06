@@ -247,28 +247,23 @@ async function generateImage() {
         
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        // Read response as text (it's already base64 encoded)
-        let base64Data = await response.text();
-        console.log('Response length:', base64Data.length);
-        console.log('Response preview:', base64Data.substring(0, 50));
+        // Read response as ArrayBuffer (raw binary data)
+        const arrayBuffer = await response.arrayBuffer();
+        console.log('Received', arrayBuffer.byteLength, 'bytes');
         
-        // Clean up the base64 data - remove any whitespace, newlines, quotes
-        base64Data = base64Data.trim().replace(/[\r\n\s"]/g, '');
-        
-        // If it's JSON, extract the data field
-        if (base64Data.startsWith('[') || base64Data.startsWith('{')) {
-            try {
-                const json = JSON.parse(base64Data);
-                const item = Array.isArray(json) ? json[0] : json;
-                base64Data = item.data || item.base64 || item.image || '';
-            } catch (e) {
-                console.log('Not valid JSON, using as raw base64');
-            }
+        // Convert ArrayBuffer to base64
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
         }
+        const base64Data = btoa(binary);
+        
+        console.log('Base64 length:', base64Data.length);
+        console.log('Base64 preview:', base64Data.substring(0, 50));
         
         // Create data URL
         const dataUrl = `data:image/png;base64,${base64Data}`;
-        console.log('Data URL length:', dataUrl.length);
         
         // Display the image
         displayGeneratedImage(dataUrl);
