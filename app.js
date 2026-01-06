@@ -247,26 +247,28 @@ async function generateImage() {
         
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        // Read response as blob (binary data)
-        let blob = await response.blob();
-        console.log('Received blob:', blob.type, blob.size, 'bytes');
+        // Read response as text (it's already base64 encoded)
+        let base64Data = await response.text();
+        console.log('Response length:', base64Data.length);
+        console.log('Response preview:', base64Data.substring(0, 50));
         
-        // If blob has no type, assume it's PNG
-        if (!blob.type || blob.type === 'application/octet-stream') {
-            blob = new Blob([blob], { type: 'image/png' });
-            console.log('Created typed blob:', blob.type);
+        // Clean up the base64 data - remove any whitespace, newlines, quotes
+        base64Data = base64Data.trim().replace(/[\r\n\s"]/g, '');
+        
+        // If it's JSON, extract the data field
+        if (base64Data.startsWith('[') || base64Data.startsWith('{')) {
+            try {
+                const json = JSON.parse(base64Data);
+                const item = Array.isArray(json) ? json[0] : json;
+                base64Data = item.data || item.base64 || item.image || '';
+            } catch (e) {
+                console.log('Not valid JSON, using as raw base64');
+            }
         }
         
-        // Convert blob to base64 data URL
-        const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = () => reject(new Error('Failed to read image data'));
-            reader.readAsDataURL(blob);
-        });
-        
-        console.log('Data URL created, length:', dataUrl.length);
-        console.log('Data URL prefix:', dataUrl.substring(0, 50));
+        // Create data URL
+        const dataUrl = `data:image/png;base64,${base64Data}`;
+        console.log('Data URL length:', dataUrl.length);
         
         // Display the image
         displayGeneratedImage(dataUrl);
