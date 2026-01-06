@@ -235,6 +235,7 @@ async function generateImage() {
     setButtonLoading(elements.generateImageBtn, true);
     
     try {
+        console.log('Sending request to:', state.settings.imageWebhook);
         const response = await fetch(state.settings.imageWebhook, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -245,23 +246,31 @@ async function generateImage() {
             })
         });
         
-        if (!response.ok) throw new Error('Generation failed');
+        console.log('Response status:', response.status, response.ok);
+        
+        if (!response.ok) throw new Error(`Generation failed with status ${response.status}`);
         
         // Parse JSON response
         const data = await response.json();
+        console.log('Parsed JSON data:', data);
+        console.log('Is Array:', Array.isArray(data));
         
         // Handle array response (n8n returns array)
         const imageData = Array.isArray(data) ? data[0] : data;
+        console.log('Image data object:', imageData);
         
         if (!imageData) throw new Error('Empty response');
         
         // Check for base64 data field (n8n ComfyUI format)
         const base64Data = imageData.data || imageData.base64 || imageData.image_data || imageData.imageData;
+        console.log('Base64 data found:', base64Data ? `${base64Data.substring(0, 50)}... (${base64Data.length} chars)` : 'null');
         
         if (base64Data) {
             // Determine MIME type from filename or default to png
             let mimeType = 'image/png';
             const filename = imageData.filename || '';
+            console.log('Filename:', filename);
+            
             if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) {
                 mimeType = 'image/jpeg';
             } else if (filename.endsWith('.webp')) {
@@ -272,6 +281,7 @@ async function generateImage() {
             
             // Create data URL from base64
             const dataUrl = `data:${mimeType};base64,${base64Data}`;
+            console.log('Data URL created, length:', dataUrl.length);
             
             // Store filename for download
             state.image.filename = filename || `ai-image-${Date.now()}.png`;
@@ -283,6 +293,7 @@ async function generateImage() {
         
         // Fallback: check for URL-based responses
         const imageUrl = imageData.image_url || imageData.imageUrl || imageData.url || imageData.image;
+        console.log('Image URL:', imageUrl);
         
         if (imageUrl) {
             displayGeneratedImage(imageUrl);
@@ -292,6 +303,7 @@ async function generateImage() {
         }
     } catch (error) {
         console.error('Image generation error:', error);
+        console.error('Error stack:', error.stack);
         showToast('Failed to generate image. Please try again.', 'error');
     } finally {
         state.image.isGenerating = false;
