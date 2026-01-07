@@ -442,6 +442,7 @@ async function generateMusic() {
         // Read response as text first to check format
         const responseText = await response.text();
         console.log('Music response length:', responseText.length);
+        console.log('Music response preview:', responseText.substring(0, 100));
         
         let base64Data = responseText.trim();
         
@@ -451,6 +452,7 @@ async function generateMusic() {
                 const json = JSON.parse(base64Data);
                 const item = Array.isArray(json) ? json[0] : json;
                 base64Data = item.output || item.audio || item.data || item.base64 || item.music || '';
+                console.log('Extracted from JSON, length:', base64Data.length);
                 
                 // If we got a URL instead of base64
                 if (base64Data.startsWith('http')) {
@@ -463,21 +465,28 @@ async function generateMusic() {
             }
         }
         
-        // Clean up base64 data
+        // Clean up base64 data - remove whitespace, quotes, newlines
         base64Data = base64Data.replace(/[\r\n\s"]/g, '');
+        console.log('Cleaned base64 length:', base64Data.length);
+        console.log('Base64 preview:', base64Data.substring(0, 50));
         
         // Create audio data URL
         const audioDataUrl = `data:audio/mpeg;base64,${base64Data}`;
         console.log('Audio data URL created, length:', audioDataUrl.length);
         
         // Convert to blob for download
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        try {
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            state.music.audioBlob = new Blob([byteArray], { type: 'audio/mpeg' });
+            console.log('Audio blob created:', state.music.audioBlob.size, 'bytes');
+        } catch (blobError) {
+            console.error('Error creating blob:', blobError);
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        state.music.audioBlob = new Blob([byteArray], { type: 'audio/mpeg' });
         
         displayGeneratedMusic(audioDataUrl);
         showToast('Music generated successfully!', 'success');
