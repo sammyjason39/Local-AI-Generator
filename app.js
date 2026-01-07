@@ -52,6 +52,7 @@ const elements = {
     
     // Music Generator - Lyrics
     musicTheme: document.getElementById('musicTheme'),
+    musicLanguage: document.getElementById('musicLanguage'),
     musicGenre: document.getElementById('musicGenre'),
     musicMood: document.getElementById('musicMood'),
     generateLyricsBtn: document.getElementById('generateLyricsBtn'),
@@ -350,6 +351,7 @@ async function generateLyrics() {
     }
     
     state.music.theme = theme;
+    state.music.language = elements.musicLanguage.value;
     state.music.genre = elements.musicGenre.value;
     state.music.mood = elements.musicMood.value;
     state.music.isGeneratingLyrics = true;
@@ -361,6 +363,7 @@ async function generateLyrics() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 theme: state.music.theme,
+                language: state.music.language,
                 genre: state.music.genre,
                 mood: state.music.mood
             })
@@ -436,17 +439,49 @@ async function generateMusic() {
         
         if (!response.ok) throw new Error('Generation failed');
         
-        const data = await response.json();
+        // Read response as text first to check format
+        const responseText = await response.text();
+        console.log('Music response length:', responseText.length);
         
-        // Handle different response formats
-        const audioUrl = data.audio_url || data.audioUrl || data.url || data.music_url || data.musicUrl;
+        let base64Data = responseText.trim();
         
-        if (audioUrl) {
-            displayGeneratedMusic(audioUrl);
-            showToast('Music generated successfully!', 'success');
-        } else {
-            throw new Error('No audio URL in response');
+        // Check if it's JSON with output field
+        if (base64Data.startsWith('{') || base64Data.startsWith('[')) {
+            try {
+                const json = JSON.parse(base64Data);
+                const item = Array.isArray(json) ? json[0] : json;
+                base64Data = item.output || item.audio || item.data || item.base64 || item.music || '';
+                
+                // If we got a URL instead of base64
+                if (base64Data.startsWith('http')) {
+                    displayGeneratedMusic(base64Data);
+                    showToast('Music generated successfully!', 'success');
+                    return;
+                }
+            } catch (e) {
+                console.log('Not valid JSON, treating as raw base64');
+            }
         }
+        
+        // Clean up base64 data
+        base64Data = base64Data.replace(/[\r\n\s"]/g, '');
+        
+        // Create audio data URL
+        const audioDataUrl = `data:audio/mpeg;base64,${base64Data}`;
+        console.log('Audio data URL created, length:', audioDataUrl.length);
+        
+        // Convert to blob for download
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        state.music.audioBlob = new Blob([byteArray], { type: 'audio/mpeg' });
+        
+        displayGeneratedMusic(audioDataUrl);
+        showToast('Music generated successfully!', 'success');
+        
     } catch (error) {
         console.error('Music generation error:', error);
         showToast('Failed to generate music. Please try again.', 'error');
@@ -484,6 +519,11 @@ function displayGeneratedMusic(url) {
         animateWaveform(false);
     });
     
+    audioElement.addEventListener('error', (e) => {
+        console.error('Audio load error:', e);
+        showToast('Failed to load audio', 'error');
+    });
+    
     // Update step indicator
     elements.stepBadges[1].classList.add('completed');
 }
@@ -503,11 +543,20 @@ function togglePlayPause() {
 }
 
 async function downloadMusic() {
-    if (!state.music.audioUrl) return;
+    if (!state.music.audioUrl && !state.music.audioBlob) return;
     
     try {
-        const response = await fetch(state.music.audioUrl);
-        const blob = await response.blob();
+        let blob;
+        
+        // Use stored blob if available (from base64 response)
+        if (state.music.audioBlob) {
+            blob = state.music.audioBlob;
+        } else {
+            // Fetch from URL
+            const response = await fetch(state.music.audioUrl);
+            blob = await response.blob();
+        }
+        
         const url = URL.createObjectURL(blob);
         
         const a = document.createElement('a');
@@ -520,7 +569,10 @@ async function downloadMusic() {
         
         showToast('Music downloaded!', 'success');
     } catch (error) {
-        window.open(state.music.audioUrl, '_blank');
+        console.error('Download error:', error);
+        if (state.music.audioUrl) {
+            window.open(state.music.audioUrl, '_blank');
+        }
     }
 }
 

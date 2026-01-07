@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="AI-powered Image and Music Generator with modern interface">
     <title>AI Studio | Image & Music Generator</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5z'/%3E%3Cpath d='M2 17l10 5 10-5'/%3E%3Cpath d='M2 12l10 5 10-5'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +27,10 @@
                         <path d="M2 12l10 5 10-5"/>
                     </svg>
                 </div>
-                <span class="logo-text">AI Studio</span>
+                <div class="logo-content">
+                    <span class="logo-text">AI Studio</span>
+                    <span class="logo-subtitle">Local AI Media Generator</span>
+                </div>
             </div>
 
             <nav class="nav-tabs">
@@ -52,7 +56,7 @@
                 <button class="btn-icon" id="settingsBtn" aria-label="Settings">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"/>
-                        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                     </svg>
                 </button>
                 <button class="btn-icon" id="themeToggle" aria-label="Toggle theme">
@@ -174,6 +178,19 @@
                         <div class="form-group">
                             <label for="musicTheme">Theme / Topic</label>
                             <input type="text" id="musicTheme" class="input-text" placeholder="Lost love in a rainy city...">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="musicLanguage">Language</label>
+                            <select id="musicLanguage" class="input-select">
+                                <option value="id">🇮🇩 Indonesian</option>
+                                <option value="en">🇬🇧 English</option>
+                                <option value="jp">🇯🇵 Japanese</option>
+                                <option value="kr">🇰🇷 Korean</option>
+                                <option value="fr">🇫🇷 French</option>
+                                <option value="cn">🇨🇳 Chinese</option>
+                                <option value="mixed">🌍 Mixed Language</option>
+                            </select>
                         </div>
 
                         <div class="form-row">
@@ -379,8 +396,16 @@
         </div>
     </div>
 
+
     <!-- Toast Notifications -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <span>Running Locally</span>
+        <span>Powered by</span>
+        <img src="geforcertx-logo-wht.png" alt="GeForce RTX" class="rtx-logo">
+    </footer>
 
     <script src="app.js"></script>
 </body>
