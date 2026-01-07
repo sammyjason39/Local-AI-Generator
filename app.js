@@ -439,54 +439,27 @@ async function generateMusic() {
         
         if (!response.ok) throw new Error('Generation failed');
         
-        // Read response as text first to check format
-        const responseText = await response.text();
-        console.log('Music response length:', responseText.length);
-        console.log('Music response preview:', responseText.substring(0, 100));
+        // Read response as ArrayBuffer (raw binary MP3 data)
+        const arrayBuffer = await response.arrayBuffer();
+        console.log('Received', arrayBuffer.byteLength, 'bytes');
         
-        let base64Data = responseText.trim();
-        
-        // Check if it's JSON with output field
-        if (base64Data.startsWith('{') || base64Data.startsWith('[')) {
-            try {
-                const json = JSON.parse(base64Data);
-                const item = Array.isArray(json) ? json[0] : json;
-                base64Data = item.output || item.audio || item.data || item.base64 || item.music || '';
-                console.log('Extracted from JSON, length:', base64Data.length);
-                
-                // If we got a URL instead of base64
-                if (base64Data.startsWith('http')) {
-                    displayGeneratedMusic(base64Data);
-                    showToast('Music generated successfully!', 'success');
-                    return;
-                }
-            } catch (e) {
-                console.log('Not valid JSON, treating as raw base64');
-            }
+        // Convert ArrayBuffer to base64
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
         }
+        const base64Data = btoa(binary);
         
-        // Clean up base64 data - remove whitespace, quotes, newlines
-        base64Data = base64Data.replace(/[\r\n\s"]/g, '');
-        console.log('Cleaned base64 length:', base64Data.length);
+        console.log('Base64 length:', base64Data.length);
         console.log('Base64 preview:', base64Data.substring(0, 50));
         
         // Create audio data URL
         const audioDataUrl = `data:audio/mpeg;base64,${base64Data}`;
-        console.log('Audio data URL created, length:', audioDataUrl.length);
         
-        // Convert to blob for download
-        try {
-            const byteCharacters = atob(base64Data);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            state.music.audioBlob = new Blob([byteArray], { type: 'audio/mpeg' });
-            console.log('Audio blob created:', state.music.audioBlob.size, 'bytes');
-        } catch (blobError) {
-            console.error('Error creating blob:', blobError);
-        }
+        // Store blob for download
+        state.music.audioBlob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+        console.log('Audio blob created:', state.music.audioBlob.size, 'bytes');
         
         displayGeneratedMusic(audioDataUrl);
         showToast('Music generated successfully!', 'success');
